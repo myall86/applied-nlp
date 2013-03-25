@@ -112,10 +112,70 @@ class ExtendedFeatureExtractor(bitvectors: Map[String, BitVector])
     val basicFeatures = BasicFeatureExtractor(verb, noun, prep, prepObj)
 
     // Extract more features
+	val numBits = 8
+	val verbBitstring = if(bitvectors.contains(verb)) bitvectors(verb).toString.reverse.take(numBits)
+			else ""
+	val nounBitstring = if(bitvectors.contains(noun)) bitvectors(noun).toString.reverse.take(numBits)
+			else ""
+	val prepBitstring = if(bitvectors.contains(prep)) bitvectors(prep).toString.reverse.take(numBits)
+			else ""
+	val prepObjBitstring = if(bitvectors.contains(prepObj)) bitvectors(prepObj).toString.reverse.take(numBits)
+			else ""
 
-    // Return the features. You should of course add your features to basic ones.
-    basicFeatures
+	val extendedFeatures = Iterable(
+		AttrVal("verb+prep", verb ++ "+" ++ prep),
+		AttrVal("verb+prep_obj", verb ++ "+" ++ prepObj),
+		AttrVal("noun+prep", noun ++ "+" ++ prep),
+		AttrVal("noun+prep_obj", noun ++ "+" ++ prepObj),
+		AttrVal("prep+prep_obj", prep ++ "+" ++ prepObj),
+		AttrVal("verb_form", wordForm(verb)),
+		AttrVal("noun_form", wordForm(noun)),
+		AttrVal("prep_obj_form", wordForm(prepObj)),
+		AttrVal("stem", stemmer(verb)),
+		AttrVal("verb_bits", verbBitstring),
+		AttrVal("noun_bits", nounBitstring),
+		AttrVal("prep_bits", prepBitstring),
+		AttrVal("prep_obj_bits", prepObjBitstring)
+	)
+	
+    // Return the features. 
+    basicFeatures ++ extendedFeatures
   }
+
+	private def wordForm(word: String): String = 
+	{
+		try
+		{
+			word.replaceAll(",", "").toDouble
+			"number"
+		}
+		catch
+		{
+			case e: Exception => 
+			{
+				if(word.contains("%")) "%"
+				else if(isX_xForm(word)) "X-x"
+				else if(isXXForm(word)) "XX"
+				else "unspecified"
+			}
+		}	
+	}
+
+	private def isX_xForm(word: String): Boolean = 
+	{
+		if(word.length < 1 || word(0).isLower) return false
+		for(i <- 1 to word.length - 1)	
+			if(word(i).isUpper) return false
+		return true	
+	}
+
+	private def isXXForm(word: String): Boolean = 
+	{
+		if(word.length < 1) return false
+		for(i <- 0 to word.length - 1)	
+			if(word(i).isLower) return false
+		return true	
+	}
 
 }
 
